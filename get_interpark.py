@@ -28,10 +28,30 @@ def extract_movie_code(data):
 	p = re.compile('GroupCode : "(.*?)", GroupName : "(.*?)",')
 	for item in soup.find_all('script'):
 		m = p.findall(item.text)
-		for m_code in m:
+		#print len(m)
+		for m_code in m:			
 			movie_code_dic[m_code[0]] = m_code[1].encode('utf-8').decode('utf-8')
 
 	return movie_code_dic
+	
+def get_date_list(movie_code):
+	params = ''
+	headers = {"Content-type": "text/html"}
+	conn = httplib.HTTPConnection("movie.interpark.com")
+	url = '/Movie/2.0/WebControl/DateSelect.asp?Type=M&GroupCode=' + movie_code
+	conn.request("GET", url, params, headers)
+	response = conn.getresponse()
+	
+	soup = BeautifulSoup(response.read())
+	date_list = []
+	p = re.compile('TheaterDate\.PlayDate\.push\(\'(.*?)\'\)')
+	for item in soup.find_all('script'):
+		m = p.findall(item.text)
+		#print len(m)
+		for m_code in m:
+			date_list.append(m_code)
+	return date_list
+	
 	
 def parse_theater_info(movie_name, raw_data):
 	soup = BeautifulSoup(raw_data)
@@ -41,6 +61,8 @@ def parse_theater_info(movie_name, raw_data):
 		m = p.findall(item.text)
 		for m_code in m:
 			data = m_code.encode('utf-8').decode('utf-8').split(' ')
+			if len(data) < 2:
+				continue
 			theater_name = '"' + movie_name + '" ' + data[0] + ' ' + data[1]
 			#print theater_name
 			if theater_name in theater_dic:
@@ -51,25 +73,29 @@ def parse_theater_info(movie_name, raw_data):
 	return theater_dic
 	
 def get_theater_movie_list(movie_code_dic):
-	today_str = date.today().strftime("%Y%m%d")
+	#today_str = date.today().strftime("%Y%m%d")
 	
 	current_dic = {}	
 	f = open('list_interpark.txt', 'w')
 	
-	for movie_code in movie_code_dic.keys():
-		params = ''
-		headers = {"Content-type": "text/html"}
-		conn = httplib.HTTPConnection("movie.interpark.com")
-		url = '/Movie/2.0/WebControl/TheaterDateSelect.asp?Type=M&GroupCode=' + movie_code + '&PlayDate=' + today_str
-		conn.request("GET", url, params, headers)
-		response = conn.getresponse()
-		#print movie_code_dic[movie_code]
-		info_dic = parse_theater_info(movie_code_dic[movie_code], response.read())
-		current_dic.update(info_dic)
-		for name in info_dic.keys():
-			text = name + ' (' + str(info_dic[name]) + ')'
-			f.write(text.encode('utf-8'))
-			f.write('\n')
+	for movie_code in movie_code_dic.keys():		
+		date_list = get_date_list(movie_code)
+		for target_date in date_list:
+			params = ''
+			headers = {"Content-type": "text/html"}
+			conn = httplib.HTTPConnection("movie.interpark.com")
+			url = '/Movie/2.0/WebControl/TheaterDateSelect.asp?Type=M&GroupCode=' + movie_code + '&PlayDate=' + target_date
+			conn.request("GET", url, params, headers)
+			response = conn.getresponse()
+			#print movie_code_dic[movie_code]
+			info_dic = parse_theater_info(movie_code_dic[movie_code], response.read())
+			current_dic.update(info_dic)
+			
+	for name in sorted(current_dic.keys()):
+		text = name.encode('utf-8') + ' (' + str(current_dic[name]) + ')'
+		f.write(text)
+		f.write('\n')
+		
 	f.close()
 	return current_dic
 	
@@ -132,10 +158,19 @@ class DictDiffer(object):
 		
 def run():
 	prev_movie_dic = load_previous_movie_list()
+	print 'end load_previous_movie_list (size:' + str(len(prev_movie_dic.keys())) + ')'
+	
 	raw_data = get_list_from_interpark()
-	movie_code = extract_movie_code(raw_data)	
+	print 'end get_list_from_interpark'
+	
+	movie_code = extract_movie_code(raw_data)
+	print 'extract_movie_code (size:' + str(len(movie_code.keys())) + ')'
+	
 	cur_movie_dic = get_theater_movie_list(movie_code)
+	print 'get_theater_movie_list (size:' + str(len(cur_movie_dic.keys())) + ')'
+	
 	write_movie_list_file(cur_movie_dic)
+	print 'write_movie_list_file'
 	
 	differ = DictDiffer(cur_movie_dic, prev_movie_dic)
 	

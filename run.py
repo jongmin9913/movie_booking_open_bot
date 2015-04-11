@@ -10,7 +10,7 @@ def tweet(twitter_api, is_open, movie_dic):
 			text += 'Open\n' + item[sp+2:] + ' (' + str(movie_dic[item]) + ')\n' + item[:sp+1]
 		else:
 			text += 'Close\n' + item[sp+2:] + '\n' + item[:sp+1]
-		api.update_status(status=text)
+		#api.update_status(status=text)
 		print text
 
 def loadConfigure():
@@ -32,7 +32,7 @@ def loadConfigure():
 		
 		key = text[0].strip('\n')
 		value = text[1].strip('\n')
-		print key.encode('utf-8'), value.encode('utf-8')
+		#print key.encode('utf-8'), value.encode('utf-8')
 		config_dic[key] = value
 		
 	f.close()
