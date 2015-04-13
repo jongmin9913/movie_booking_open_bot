@@ -190,7 +190,7 @@ def run():
 		
 	change_dic = {}
 	for name in differ.changed():
-		change_dic[name] = cur_movie_dic[name]
+		change_dic[name] = (prev_movie_dic[name], cur_movie_dic[name])
 	
 	return (remove_dic, add_dic, change_dic)
 	

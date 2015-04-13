@@ -11,7 +11,8 @@ def tweet(twitter_api, status, movie_dic):
 		if status == 'Open':
 			text += 'Open\n' + item[sp+2:] + ' (' + str(movie_dic[item]) + ')\n' + item[:sp+1]
 		elif status == 'Change':
-			text += 'Change\n' + item[sp+2:] + ' (' + str(movie_dic[item]) + ')\n' + item[:sp+1]
+			(prev, current) = movie_dic[item]
+			text += 'Change\n' + item[sp+2:] + ' (' + str(prev) + '->' + str(current) + ')\n' + item[:sp+1]
 		elif status == 'Close':
 			text += 'Close\n' + item[sp+2:] + '\n' + item[:sp+1]
 		#print text
