@@ -2,16 +2,20 @@ import tweepy
 import get_interpark
 import os
 
-def tweet(twitter_api, is_open, movie_dic):
+def tweet(twitter_api, status, movie_dic):
+	print status + ' ' + str(len(movie_dic.keys()))
+	
 	for item in movie_dic.keys():
 		text = ''
 		sp = item.rfind('" ')
-		if is_open == True:
+		if status == 'Open':
 			text += 'Open\n' + item[sp+2:] + ' (' + str(movie_dic[item]) + ')\n' + item[:sp+1]
-		else:
+		elif status == 'Change':
+			text += 'Change\n' + item[sp+2:] + ' (' + str(movie_dic[item]) + ')\n' + item[:sp+1]
+		elif status == 'Close':
 			text += 'Close\n' + item[sp+2:] + '\n' + item[:sp+1]
-		#api.update_status(status=text)
-		print text
+		#print text
+		api.update_status(status=text)
 
 def loadConfigure():
 	filename = 'config.txt'
@@ -42,14 +46,15 @@ def loadConfigure():
 if __name__ == "__main__":
 	(ret, config_dic) = loadConfigure()
 	
-	if ret == True:		
+	if ret == True:
 		auth = tweepy.OAuthHandler(config_dic['CONSUMER_KEY'], config_dic['CONSUMER_SECRET'])
 		auth.set_access_token(config_dic['ACCESS_KEY'], config_dic['ACCESS_SECRET'])
-		api = tweepy.API(auth)	
+		api = tweepy.API(auth)
 
-		(close_list, open_list) = get_interpark.run()
-		tweet(api, False, close_list)
-		tweet(api, True, open_list)
+		(close_list, open_list, change_list) = get_interpark.run()
+		tweet(api, 'Close', close_list)
+		tweet(api, 'Change', change_list)
+		tweet(api, 'Open', open_list)
 			
 		#api.update_status(status='#test run')
 	

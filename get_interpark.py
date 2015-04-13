@@ -35,22 +35,24 @@ def extract_movie_code(data):
 	return movie_code_dic
 	
 def get_date_list(movie_code):
-	params = ''
-	headers = {"Content-type": "text/html"}
-	conn = httplib.HTTPConnection("movie.interpark.com")
-	url = '/Movie/2.0/WebControl/DateSelect.asp?Type=M&GroupCode=' + movie_code
-	conn.request("GET", url, params, headers)
-	response = conn.getresponse()
-	
-	soup = BeautifulSoup(response.read())
-	date_list = []
-	p = re.compile('TheaterDate\.PlayDate\.push\(\'(.*?)\'\)')
-	for item in soup.find_all('script'):
-		m = p.findall(item.text)
-		#print len(m)
-		for m_code in m:
-			date_list.append(m_code)
-	return date_list
+	return ['20150413']
+
+	#params = ''
+	#headers = {"Content-type": "text/html"}
+	#conn = httplib.HTTPConnection("movie.interpark.com")
+	#url = '/Movie/2.0/WebControl/DateSelect.asp?Type=M&GroupCode=' + movie_code
+	#conn.request("GET", url, params, headers)
+	#response = conn.getresponse()
+	#
+	#soup = BeautifulSoup(response.read())
+	#date_list = []
+	#p = re.compile('TheaterDate\.PlayDate\.push\(\'(.*?)\'\)')
+	#for item in soup.find_all('script'):
+	#	m = p.findall(item.text)
+	#	#print len(m)
+	#	for m_code in m:
+	#		date_list.append(m_code)
+	#return date_list
 	
 	
 def parse_theater_info(movie_name, raw_data):
@@ -116,8 +118,9 @@ def load_previous_movie_list():
 		text = line.decode('utf-8').strip('\n')
 		sp = text.rfind(' ')
 		name = text[:sp]
-		value = text[sp:].strip('()')
-		prev_movie_dic[name] = value
+		value = text[sp:].replace('(','').replace(')','')
+		#print name, value
+		prev_movie_dic[name] = int(value)
 	
 	f.close()	
 	return prev_movie_dic
@@ -172,6 +175,9 @@ def run():
 	write_movie_list_file(cur_movie_dic)
 	print 'write_movie_list_file'
 	
+	#print prev_movie_dic.values()
+	#print cur_movie_dic.values()
+	
 	differ = DictDiffer(cur_movie_dic, prev_movie_dic)
 	
 	add_dic = {}
@@ -181,13 +187,12 @@ def run():
 	remove_dic = {}	
 	for name in differ.removed():
 		remove_dic[name] = prev_movie_dic[name]
-	#print 'close_list : '
-	#print_set(close_list)
+		
+	change_dic = {}
+	for name in differ.changed():
+		change_dic[name] = cur_movie_dic[name]
 	
-	#open_list = cur_movie_list - prev_movie_list
-	#print 'open_list : '
-	#print_set(open_list)
-	return (remove_dic, add_dic)
+	return (remove_dic, add_dic, change_dic)
 	
 
 if __name__ == "__main__":
